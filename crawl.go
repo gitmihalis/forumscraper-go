@@ -19,19 +19,31 @@ type SiteMapIndex struct {
 	Locations []string `xml:"sitemap>loc"`
 }
 
-// Visit the locations on the sitemap
-
-// Pull the tiles and articles themselves 
+// Pages will contain locations of forum pages
+type Pages struct {
+	Pages []string `xml:"url>loc"`
+}
 
 func main() {
-	resp, _ := http.Get("https://www.coindesk.com/sitemap_index.xml")
-	bytes, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-
 	var s SiteMapIndex
+	var p Pages
+	var reqCount int
+	
+	resp, _ := http.Get("https://bitcointalk.org/sitemap.php")
+	bytes, _ := ioutil.ReadAll(resp.Body)
 	xml.Unmarshal(bytes, &s)
-	//	fmt.Println(s.Locations)
+	
+	// Visit the locations on the sitemap
 	for _, location := range s.Locations {
-		fmt.Printf("\n%s", location)
+		fmt.Println("Crawling...", reqCount)
+		reqCount++
+		resp, _ := http.Get(location)
+		bytes, _ := ioutil.ReadAll(resp.Body)
+		xml.Unmarshal(bytes, &p)
+		resp.Body.Close()
 	}
+
+	fmt.Println(p, reqCount)
+
+	// TODO: Build a Map!
 }
