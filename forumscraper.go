@@ -99,7 +99,7 @@ func main() {
 	// Print the rsults....
 	fmt.Println("\nFound", len(foundUrls), "unique urls:\n")
 
-	for url, _ := range foundUrls {
+	for url := range foundUrls {
 		fmt.Println(" - " + url)
 	}
 

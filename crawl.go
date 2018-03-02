@@ -16,18 +16,12 @@ import (
 
 // SiteMapIndex will contain a slice of Location types
 type SiteMapIndex struct {
-	Locations []Location `xml:"sitemap"`
+	Locations []string `xml:"sitemap>loc"`
 }
 
-// Location is the url we want to crawl
-type Location struct {
-	Loc string `xml:"loc"`
-}
+// Visit the locations on the sitemap
 
-// Convert the Location struct value to a string
-func (l Location) String() string {
-	return fmt.Sprintf(l.Loc)
-}
+// Pull the tiles and articles themselves 
 
 func main() {
 	resp, _ := http.Get("https://www.coindesk.com/sitemap_index.xml")
