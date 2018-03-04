@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
+
+	"golang.org/x/net/html"
 )
 
 // sample XML
@@ -16,34 +19,70 @@ import (
 
 // SiteMapIndex will contain a slice of Location types
 type SiteMapIndex struct {
-	Locations []string `xml:"sitemap>loc"`
+	Locations []string `xml:"url>loc"`
 }
 
-// Pages will contain locations of forum pages
-type Pages struct {
-	Pages []string `xml:"url>loc"`
+// A helper func to pull the href attr from a Token
+func getHref(t html.Token) (ok bool, href string) {
+	// iterate over all the Token's attributes until we find `href`
+	for _, a := range t.Attr {
+		if a.Key == "href" {
+			href = a.Val
+			ok = true
+		}
+	}
+	// `bare` return will return the vars ( ok, href )
+	return
 }
 
 func main() {
 	var s SiteMapIndex
-	var p Pages
-	var reqCount int
-	
-	resp, _ := http.Get("https://bitcointalk.org/sitemap.php")
+
+	resp, _ := http.Get("https://bitcoinforum.com/sitemap/?xml")
 	bytes, _ := ioutil.ReadAll(resp.Body)
 	xml.Unmarshal(bytes, &s)
-	
+
 	// Visit the locations on the sitemap
 	for _, location := range s.Locations {
-		fmt.Println("Crawling...", reqCount)
-		reqCount++
 		resp, _ := http.Get(location)
-		bytes, _ := ioutil.ReadAll(resp.Body)
-		xml.Unmarshal(bytes, &p)
-		resp.Body.Close()
-	}
+		body := resp.Body
+		defer body.Close()
 
-	fmt.Println(p, reqCount)
+		z := html.NewTokenizer(body)
+
+		for {
+			// repeatedly call z.Next() which parses the next token and returns it's type
+			tt := z.Next()
+
+			switch {
+			case tt == html.ErrorToken:
+				return
+			case tt == html.StartTagToken:
+				// Process the current token.
+				t := z.Token()
+
+				// Check is token <a> tag?
+				isAnchor := t.Data == "a"
+				if !isAnchor {
+					continue
+				}
+
+				// Extract href
+				ok, url := getHref(t)
+				if !ok {
+					continue
+				}
+
+				// Check the url begins in http**
+				hasProto := strings.Index(url, "http") == 0
+				if hasProto {
+					fmt.Println(url)
+				}
+			}
+
+		}
+
+	}
 
 	// TODO: Build a Map!
 }
